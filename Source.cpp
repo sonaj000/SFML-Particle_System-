@@ -18,8 +18,11 @@ int main()
 	Particle* holder = new Particle(50);
 	holder->setFillColor(sf::Color::Red);
 
+	ParticleSystem* System = new ParticleSystem(5);
 	sf::Clock Timer;
 	Timer.restart();
+
+	sf::Vector2i localPosition;
 
 	while (window.isOpen())
 	{
@@ -34,21 +37,33 @@ int main()
 		if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
 		{
 			cout << "button pressed" << "\n";
-			sf::Vector2i localPosition = sf::Mouse::getPosition(window);
-			ParticleSystem* System = new ParticleSystem(5);
-			for (Particle* ind : System->Particles)
+			localPosition = sf::Mouse::getPosition(window);
+			//for (Particle* ind : System->Particles)
+			//{
+			//	ind->setPosition(float(localPosition.x), float(localPosition.y));
+			//}
+		}
+		for (Particle* ind : System->Particles)
+		{
+			if (ind != nullptr)
 			{
-				ind->setPosition(float(localPosition.x), float(localPosition.y));
 				ind->Movement(ind, deltatime);
 				window.draw(*ind);
 				if (deltatime > ind->TotalLife)
 				{
 					window.clear(sf::Color::Black);
-					//delete ind;
-					//ind = nullptr;
+					ind = nullptr;
+					delete ind;
 				}
 			}
 		}
+		if (System->Particles.size() < 1)
+		{
+			delete System;
+			System = nullptr;
+			cout << "true" << "\n";
+		}
+
 
 		//delete system after 
 		//if (holder)
@@ -69,7 +84,7 @@ int main()
 
 Particle::Particle(int radius) : sf::CircleShape(radius)
 {
-	Positions = { 0,0 };
+	Positions = { 300,300 };
 	Velocities = { 0,0 };
 	TotalLife = 3;
 }
@@ -82,7 +97,11 @@ void Particle::Movement(Particle *to, float dt)
 {
 	//cout << dt << "\n";
 	to->move(sf::Vector2f(dt * to->Velocities[0] * 0.1, dt * 0.1 * to->Velocities[1]));
-
+	if (dt > to->TotalLife)
+	{
+		dt = 0.0f;
+		return;
+	}
 }
 
 
@@ -132,5 +151,6 @@ void ParticleSystem::Randomize(Particle* indP)
 	float randomFloatX  = dis(gen);
 	float randomFloatY = dis(gen);
 	indP->Velocities = { randomFloatX,randomFloatY}; // randomize velocity for x and y
-	indP->TotalLife = rand() % 5; // randomize lifetime of particle
+	indP->TotalLife = 1; // randomize lifetime of particle but set to 3 rn for debugging purposes
+	indP->setPosition(300, 300); // set to 300,300 rn for debugging purposes but will change to base it on mouse position. 
 }
