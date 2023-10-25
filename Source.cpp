@@ -43,7 +43,7 @@ int main()
 				if (System == nullptr)
 				{
 					cout << "system is null" << "\n";
-					System = new ParticleSystem(20);
+					System = new ParticleSystem(20);//allocation
 					localPosition = sf::Mouse::getPosition(window);
 					for (Particle* ind : System->Particles)
 					{
@@ -71,7 +71,7 @@ int main()
 				Particle* h = System->Particles[i];
 				if (deltatime > h->TotalLife)
 				{
-					delete h;
+					delete h; //this is probably unncesary since i;m not allocating anything haha
 					h = nullptr;
 					System->Particles.erase(System->Particles.begin() + i);
 					cout << "erasing" << "\n";
@@ -79,7 +79,7 @@ int main()
 			}
 			if (System->Particles.size() < 1)
 			{
-				delete System;
+				delete System; //free memory 
 				System = nullptr;
 				cout << "true" << "\n";
 				bcanSpawn = false;
@@ -94,6 +94,7 @@ int main()
 
 Particle::Particle(int radius) : sf::CircleShape(radius)
 {
+	//these are irrelevant and will be randomized or set later
 	Positions = { 300,300 };
 	Velocities = { 0,0 };
 	TotalLife = 3;
@@ -112,12 +113,6 @@ void Particle::Movement(Particle *to, float dt)
 		dt = 0.0f;
 		return;
 	}
-}
-
-bool Particle::bisDead(float dt)
-{
-
-	return false;
 }
 
 
