@@ -18,11 +18,12 @@ int main()
 	Particle* holder = new Particle(50);
 	holder->setFillColor(sf::Color::Red);
 
-	ParticleSystem* System = new ParticleSystem(5);
+	ParticleSystem* System = nullptr;//new ParticleSystem(10);
 	sf::Clock Timer;
 	Timer.restart();
 
-	sf::Vector2i localPosition;
+	sf::Vector2i localPosition = { 0,0 };
+	bool bcanSpawn = false;
 
 	while (window.isOpen())
 	{
@@ -36,47 +37,54 @@ int main()
 		window.clear(sf::Color::Black);
 		if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
 		{
-			cout << "button pressed" << "\n";
-			localPosition = sf::Mouse::getPosition(window);
-			//for (Particle* ind : System->Particles)
-			//{
-			//	ind->setPosition(float(localPosition.x), float(localPosition.y));
-			//}
-		}
-		for (Particle* ind : System->Particles)
-		{
-			if (ind != nullptr)
+			if (!bcanSpawn)
 			{
-				ind->Movement(ind, deltatime);
-				window.draw(*ind);
-				if (deltatime > ind->TotalLife)
+				cout << "bcanspawn" << "\n";
+				if (System == nullptr)
 				{
-					window.clear(sf::Color::Black);
-					ind = nullptr;
-					delete ind;
+					cout << "system is null" << "\n";
+					System = new ParticleSystem(20);
+					localPosition = sf::Mouse::getPosition(window);
+					for (Particle* ind : System->Particles)
+					{
+						ind->setPosition(float(localPosition.x), float(localPosition.y));
+						cout << "position set" << "\n";
+					}
 				}
+				bcanSpawn = true;
 			}
 		}
-		if (System->Particles.size() < 1)
+		if (bcanSpawn && System)
 		{
-			delete System;
-			System = nullptr;
-			cout << "true" << "\n";
+			cout << "bspawn set false" << "\n";
+			for (Particle* ind : System->Particles)
+			{
+				if (ind != nullptr)
+				{
+					ind->Movement(ind, deltatime);
+					window.draw(*ind);
+					cout << "drawing" << "\n";
+				}
+			}
+			for (int i{ 0 }; i < System->Particles.size(); i++)
+			{
+				Particle* h = System->Particles[i];
+				if (deltatime > h->TotalLife)
+				{
+					System->Particles.erase(System->Particles.begin() + i);
+					cout << "erasing" << "\n";
+				}
+			}
+			if (System->Particles.size() < 1)
+			{
+				delete System;
+				System = nullptr;
+				cout << "true" << "\n";
+				bcanSpawn = false;
+				Timer.restart(); // need to reset timer otherwise we balling
+			}
 		}
 
-
-		//delete system after 
-		//if (holder)
-		//{
-		//	holder->Movement(holder, deltatime, 0.01f);
-		//	window.draw(*holder);
-		//	if (deltatime > 3.0f)
-		//	{
-		//		window.clear(sf::Color::Black);
-		//		delete holder;
-		//		holder = nullptr;
-		//	}
-		//}
 		window.display();
 	}
 	return 0;
@@ -102,6 +110,12 @@ void Particle::Movement(Particle *to, float dt)
 		dt = 0.0f;
 		return;
 	}
+}
+
+bool Particle::bisDead(float dt)
+{
+
+	return false;
 }
 
 
@@ -151,6 +165,6 @@ void ParticleSystem::Randomize(Particle* indP)
 	float randomFloatX  = dis(gen);
 	float randomFloatY = dis(gen);
 	indP->Velocities = { randomFloatX,randomFloatY}; // randomize velocity for x and y
-	indP->TotalLife = 1; // randomize lifetime of particle but set to 3 rn for debugging purposes
-	indP->setPosition(300, 300); // set to 300,300 rn for debugging purposes but will change to base it on mouse position. 
+	indP->TotalLife = rand() % (5 - 1 + 1) + 1; // randomize lifetime of particle but set to 3 rn for debugging purposes rand() % (max - min + 1) + min;
+	//indP->setPosition(300, 300); // set to 300,300 rn for debugging purposes but will change to base it on mouse position. 
 }

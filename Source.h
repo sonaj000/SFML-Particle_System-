@@ -19,6 +19,8 @@ public:
 
 	int TotalLife;
 
+	bool bisDead(float dt);
+
 };
 
 class ParticleSystem
@@ -31,10 +33,6 @@ public:
 	std::vector<Particle*> Particles;
 
 	void Randomize(Particle *indP);
-
-
-
-
 
 };
 
