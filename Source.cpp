@@ -15,12 +15,12 @@ using namespace std;
 int main()
 {
 	sf::RenderWindow window(sf::VideoMode(800, 600), "SFML works!");
-	Particle* holder = new Particle(50);
-	holder->setFillColor(sf::Color::Red);
 
-	ParticleSystem* System = nullptr;//new ParticleSystem(10);
+	ParticleSystem* System = nullptr;
 	sf::Clock Timer;
 	Timer.restart();
+	// to have multiple particle systems going at once, we're going need to instantiate a timer per particle system so it can run independently based on my logic. 
+	// ideally i'll implement this as a class variable
 
 	sf::Vector2i localPosition = { 0,0 };
 	bool bcanSpawn = false;
@@ -71,6 +71,8 @@ int main()
 				Particle* h = System->Particles[i];
 				if (deltatime > h->TotalLife)
 				{
+					delete h;
+					h = nullptr;
 					System->Particles.erase(System->Particles.begin() + i);
 					cout << "erasing" << "\n";
 				}
