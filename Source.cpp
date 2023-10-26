@@ -13,94 +13,87 @@
 
 using namespace std;
 
+int main() {
+    sf::RenderWindow window(sf::VideoMode(800, 600), "SFML works!");
+    vector<ParticleSystem*> Manage2;
 
-int main()
-{
-	sf::RenderWindow window(sf::VideoMode(800, 600), "SFML works!");
-	queue<ParticleSystem*>Manage;
+    bool alreadyClicked = false;
+    sf::Vector2i localPosition = { 0, 0 };
+    sf::Clock mClock;
+    mClock.restart();
 
+    while (window.isOpen()) {
+        sf::Event event;
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed)
+                window.close();
+        }
+        window.clear(sf::Color::Black);
 
-	bool alreadyClicked = false;
+        if (sf::Mouse::isButtonPressed(sf::Mouse::Left) && !alreadyClicked) {
+            cout << "made a new particle" << "\n";
+            ParticleSystem* System = new ParticleSystem(20);
 
+            Manage2.push_back(System);
+            System->bcanSpawn = true;
+            System->PTime.restart();
+            localPosition = sf::Mouse::getPosition(window);
+            for (Particle* ind : System->Particles) {
+                ind->setPosition(float(localPosition.x), float(localPosition.y));
+            }
+            alreadyClicked = true;
+        }
 
-	sf::Vector2i localPosition = { 0,0 };
-	//clock
-	sf::Clock mClock;
-	mClock.restart();
+        if (alreadyClicked && mClock.getElapsedTime().asSeconds() > 0.5f) {
+            alreadyClicked = false;
+            mClock.restart();
+            cout << "Reset" << "\n";
+        }
 
-	while (window.isOpen())
-	{
+        for (auto it = Manage2.begin(); it != Manage2.end();) {
+            ParticleSystem* SH = *it;
+            if (SH && SH->bcanSpawn) {
+                float deltatime = SH->PTime.getElapsedTime().asSeconds();
 
-		sf::Event event;
-		while (window.pollEvent(event))
-		{
-			if (event.type == sf::Event::Closed)
-				window.close();
-		}
-		window.clear(sf::Color::Black);
-		if (sf::Mouse::isButtonPressed(sf::Mouse::Left) && !alreadyClicked)
-		{
-			cout << "made anew particle" << "\n";
-			ParticleSystem* System = new ParticleSystem(20);//allocation
-			Manage.push(System);
-			System->bcanSpawn = true;
-			System->PTime.restart();
-			localPosition = sf::Mouse::getPosition(window);
-			for (Particle* ind : System->Particles)
-			{
-				ind->setPosition(float(localPosition.x), float(localPosition.y));
-			}
-			alreadyClicked = true;
-		}
-		if (alreadyClicked && mClock.getElapsedTime().asSeconds() > 2.0f)
-		{
-			alreadyClicked = false;
-			mClock.restart();
-			cout << "Reset" << "\n";
-		}
-		if (!Manage.empty())
-		{
-			ParticleSystem* SH = Manage.front();
-			if (SH && SH->bcanSpawn)
-			{
-				float deltatime = SH->PTime.getElapsedTime().asSeconds();
-				//cout << deltatime << "\n";
-				//start the timer here. 
-				for (Particle* ind : SH->Particles)
-				{
-					if (ind != nullptr)
-					{
-						ind->Movement(ind, deltatime);
-						window.draw(*ind);
-						//cout << "drawing" << "\n";
-					}
-				}
-				//alreadyClicked = false;
-				for (int i{ 0 }; i < SH->Particles.size(); i++)
-				{
-					Particle* h = SH->Particles[i];
-					if (deltatime > h->TotalLife)
-					{
-						delete h; //this is probably unncesary since i;m not allocating anything haha
-						h = nullptr;
-						SH->Particles.erase(SH->Particles.begin() + i);
-						//cout << "erasing" << "\n";
-					}
-				}
-				if (SH->Particles.size() < 1)
-				{
-					delete SH; //free memory 
-					SH = nullptr;
-					cout << "true" << "\n";
-					Manage.pop();
-				}
-			}
-		}
+                for (Particle* ind : SH->Particles) {
+                    if (ind != nullptr) {
+                        ind->Movement(ind, deltatime);
+                        window.draw(*ind);
+                    }
+                }
 
-		window.display();
-	}
-	return 0;
+                for (int i = 0; i < SH->Particles.size(); i++) {
+                    Particle* h = SH->Particles[i];
+                    if (deltatime > h->TotalLife) {
+                        delete h;
+                        SH->Particles.erase(SH->Particles.begin() + i);
+                    }
+                }
+
+                if (SH->Particles.empty()) {
+                    delete SH;
+                    SH = nullptr;
+                    cout << "true" << "\n";
+                    it = Manage2.erase(it); // Remove the system from Manage2
+                }
+                else {
+                    ++it;
+                }
+            }
+            else {
+                ++it;
+            }
+        }
+
+        window.display();
+    }
+    for (ParticleSystem* SH : Manage2) {
+        delete SH;
+    }
+
+    return 0;
 }
+
 
 Particle::Particle(int radius) : sf::CircleShape(radius)
 {
@@ -117,7 +110,7 @@ Particle::~Particle()
 void Particle::Movement(Particle *to, float dt)
 {
 	//cout << dt << "\n";
-	to->move(sf::Vector2f(dt * to->Velocities[0] * 0.3, dt * 0.3 * to->Velocities[1]));
+	to->move(sf::Vector2f(dt * to->Velocities[0] * 0.1, dt * 0.1 * to->Velocities[1]));
 	if (dt > to->TotalLife)
 	{
 		dt = 0.0f;
@@ -178,5 +171,4 @@ void ParticleSystem::Randomize(Particle* indP)
 	float randomFloatY = dis(gen);
 	indP->Velocities = { randomFloatX,randomFloatY}; // randomize velocity for x and y
 	indP->TotalLife = rand() % (5 - 1 + 1) + 1; // randomize lifetime of particle but set to 3 rn for debugging purposes rand() % (max - min + 1) + min;
-	//indP->setPosition(300, 300); // set to 300,300 rn for debugging purposes but will change to base it on mouse position. 
 }
