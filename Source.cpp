@@ -9,81 +9,91 @@
 #include "Source.h"
 #include <iostream>
 #include <random>
+#include <queue>
 
 using namespace std;
+
 
 int main()
 {
 	sf::RenderWindow window(sf::VideoMode(800, 600), "SFML works!");
+	queue<ParticleSystem*>Manage;
 
-	ParticleSystem* System = nullptr;
-	sf::Clock Timer;
-	Timer.restart();
-	// to have multiple particle systems going at once, we're going need to instantiate a timer per particle system so it can run independently based on my logic. 
-	// ideally i'll implement this as a class variable
+
+	bool alreadyClicked = false;
+
 
 	sf::Vector2i localPosition = { 0,0 };
-	bool bcanSpawn = false;
+	//clock
+	sf::Clock mClock;
+	mClock.restart();
 
 	while (window.isOpen())
 	{
+
 		sf::Event event;
 		while (window.pollEvent(event))
 		{
 			if (event.type == sf::Event::Closed)
 				window.close();
 		}
-		float deltatime = Timer.getElapsedTime().asSeconds();
 		window.clear(sf::Color::Black);
-		if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
+		if (sf::Mouse::isButtonPressed(sf::Mouse::Left) && !alreadyClicked)
 		{
-			if (!bcanSpawn)
-			{
-				cout << "bcanspawn" << "\n";
-				if (System == nullptr)
-				{
-					cout << "system is null" << "\n";
-					System = new ParticleSystem(20);//allocation
-					localPosition = sf::Mouse::getPosition(window);
-					for (Particle* ind : System->Particles)
-					{
-						ind->setPosition(float(localPosition.x), float(localPosition.y));
-						cout << "position set" << "\n";
-					}
-				}
-				bcanSpawn = true;
-			}
-		}
-		if (bcanSpawn && System)
-		{
-			cout << "bspawn set false" << "\n";
+			cout << "made anew particle" << "\n";
+			ParticleSystem* System = new ParticleSystem(20);//allocation
+			Manage.push(System);
+			System->bcanSpawn = true;
+			System->PTime.restart();
+			localPosition = sf::Mouse::getPosition(window);
 			for (Particle* ind : System->Particles)
 			{
-				if (ind != nullptr)
-				{
-					ind->Movement(ind, deltatime);
-					window.draw(*ind);
-					cout << "drawing" << "\n";
-				}
+				ind->setPosition(float(localPosition.x), float(localPosition.y));
 			}
-			for (int i{ 0 }; i < System->Particles.size(); i++)
+			alreadyClicked = true;
+		}
+		if (alreadyClicked && mClock.getElapsedTime().asSeconds() > 2.0f)
+		{
+			alreadyClicked = false;
+			mClock.restart();
+			cout << "Reset" << "\n";
+		}
+		if (!Manage.empty())
+		{
+			ParticleSystem* SH = Manage.front();
+			if (SH && SH->bcanSpawn)
 			{
-				Particle* h = System->Particles[i];
-				if (deltatime > h->TotalLife)
+				float deltatime = SH->PTime.getElapsedTime().asSeconds();
+				//cout << deltatime << "\n";
+				//start the timer here. 
+				for (Particle* ind : SH->Particles)
 				{
-					delete h; //this is probably unncesary since i;m not allocating anything haha
-					h = nullptr;
-					System->Particles.erase(System->Particles.begin() + i);
-					cout << "erasing" << "\n";
+					if (ind != nullptr)
+					{
+						ind->Movement(ind, deltatime);
+						window.draw(*ind);
+						//cout << "drawing" << "\n";
+					}
 				}
-			}
-			if (System->Particles.size() < 1)
-			{
-				delete System; //free memory 
-				System = nullptr;
-				cout << "true" << "\n";
-				bcanSpawn = false;
-				Timer.restart(); // need to reset timer otherwise we balling
+				//alreadyClicked = false;
+				for (int i{ 0 }; i < SH->Particles.size(); i++)
+				{
+					Particle* h = SH->Particles[i];
+					if (deltatime > h->TotalLife)
+					{
+						delete h; //this is probably unncesary since i;m not allocating anything haha
+						h = nullptr;
+						SH->Particles.erase(SH->Particles.begin() + i);
+						//cout << "erasing" << "\n";
+					}
+				}
+				if (SH->Particles.size() < 1)
+				{
+					delete SH; //free memory 
+					SH = nullptr;
+					cout << "true" << "\n";
+					Manage.pop();
+				}
 			}
 		}
 
@@ -107,7 +117,7 @@ Particle::~Particle()
 void Particle::Movement(Particle *to, float dt)
 {
 	//cout << dt << "\n";
-	to->move(sf::Vector2f(dt * to->Velocities[0] * 0.1, dt * 0.1 * to->Velocities[1]));
+	to->move(sf::Vector2f(dt * to->Velocities[0] * 0.3, dt * 0.3 * to->Velocities[1]));
 	if (dt > to->TotalLife)
 	{
 		dt = 0.0f;
@@ -125,17 +135,22 @@ ParticleSystem::ParticleSystem(int nParticles)
 		Randomize(P);
 		Particles.push_back(P);
 	}
+	bcanSpawn = false;
 
 }
 
 ParticleSystem::~ParticleSystem()
 {
+	for (Particle* particle : Particles) 
+	{
+		delete particle;
+	}
 }
 
 void ParticleSystem::Randomize(Particle* indP)
 {
 	int color = rand() % 5;
-	cout << color << "\n";
+	//cout << color << "\n";
 	switch (color) //randomize color
 	{
 		case 0:

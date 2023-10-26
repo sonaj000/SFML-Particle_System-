@@ -19,7 +19,6 @@ public:
 
 	int TotalLife;
 
-	bool bisDead(float dt);
 
 };
 
@@ -33,6 +32,12 @@ public:
 	std::vector<Particle*> Particles;
 
 	void Randomize(Particle *indP);
+
+	sf::Clock PTime;
+
+	void Tick(float dt);
+
+	bool bcanSpawn;
 
 };
 
